@@ -1,11 +1,8 @@
 import sys
-import tokenize
+import logging
 import argparse
-from pprint import pprint
-from pegen.tokenizer import Tokenizer
 
-from . import syntax as s
-from .parser import GeneratedParser
+from . import parse_file, syntax as s
 
 
 # keeps the scope clean
@@ -20,12 +17,7 @@ def get_args():
 
 def main_cli():
     args = get_args()
-
-    def debug(msg: str, obj: object | None = None):
-        if args.verbose:
-            print("[DEBUG]", msg, end=" " if obj else None)
-            if obj:
-                pprint(obj)
+    logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO)
 
     filename = args.filename
     if filename == "-":
@@ -33,36 +25,8 @@ def main_cli():
         file = sys.stdin
     else:
         file = open(filename)
-    tokengen = tokenize.generate_tokens(file.readline)
-    tokenizer = Tokenizer(tokengen)
-    parser = GeneratedParser(tokenizer)
-    tree = parser.start()
+    tree = parse_file(file)
     file.close()
-
-    debug("got tree", tree)
-
-    # go through the tree, find all RuleExprs and resolve the rule names to Defs
-    defs = {d.name: d for d in tree}
-
-    def resolve_rule_defs_in_expr(expr: s.Expr):
-        if isinstance(expr, s.RuleExpr):
-            d = defs[expr.rule]
-            debug(f"resolved rule def `{expr.rule}' to `{d}'")
-            expr.rule = d
-
-    def resolve_rule_defs_in_exprs(exprs: list[s.Expr]):
-        for expr in exprs:
-            # all exprs which have children
-            if hasattr(expr, "children"):
-                resolve_rule_defs_in_exprs(expr.children)
-            elif isinstance(expr, s.OrExpr):
-                resolve_rule_defs_in_expr(expr.left)
-                resolve_rule_defs_in_expr(expr.right)
-            else:
-                resolve_rule_defs_in_expr(expr)
-
-    for d in tree:
-        resolve_rule_defs_in_exprs(d.children)
 
     # grab the first def (the 'start') and to_regex() it
     # we get its superclass first so that we dont get the extra group around it
