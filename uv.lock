@@ -1,0 +1,22 @@
+version = 1
+revision = 1
+requires-python = ">=3.10"
+
+[[package]]
+name = "pegen"
+version = "0.3.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/af/02/e275ed3cc1692dc7b882eb14b6726db8d0810f19da83756b3168034a6843/pegen-0.3.0.tar.gz", hash = "sha256:8cb30cee508a95c573aa256ed2cfa80ef8f561b90264c70e7de5afc50b4ac87d", size = 3803936 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2b/20/fcf4e7b9e36e1b45e04632d771b1f36fce7c8ce37e151b1bac0916c6b469/pegen-0.3.0-py3-none-any.whl", hash = "sha256:69253c196ea425828a6ca01cec1aadca415cd5c789b4d00d653962234497071a", size = 35345 },
+]
+
+[[package]]
+name = "regex-grammar"
+source = { editable = "." }
+dependencies = [
+    { name = "pegen" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "pegen" }]

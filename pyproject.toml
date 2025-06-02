@@ -1,0 +1,15 @@
+[project]
+name = "regex_grammar"
+dynamic = ["version"]
+dependencies = ["pegen"]
+requires-python = ">=3.10"
+
+[project.scripts]
+regex-grammar = "regex_grammar.main:main_cli"
+
+[build-system]
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "regex_grammar/__init__.py"
