@@ -13,3 +13,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.version]
 path = "regex_grammar/__init__.py"
+
+[tool.pytest.ini_options]
+addopts = ["--import-mode=importlib"]

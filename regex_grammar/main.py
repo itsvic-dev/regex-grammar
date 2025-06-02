@@ -12,6 +12,13 @@ def get_args():
     parser.add_argument(
         "-v", "--verbose", action="store_true", help="show detailed debug information"
     )
+    parser.add_argument(
+        "-f",
+        "--format",
+        choices=["python", "js"],
+        default="python",
+        help="which style regex to generate",
+    )
     return parser.parse_args()
 
 
@@ -31,4 +38,4 @@ def main_cli():
     # grab the first def (the 'start') and to_regex() it
     # we get its superclass first so that we dont get the extra group around it
     start = tree[0]
-    print(super(s.GroupDef, start).to_regex())
+    print(super(s.GroupDef, start).to_regex(args.format))

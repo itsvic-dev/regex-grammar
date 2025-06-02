@@ -1,5 +1,5 @@
 class Regexable:
-    def to_regex(self):
+    def to_regex(self, _format):
         raise NotImplementedError(f"{self.__class__.__name__}.to_regex()")
 
 
@@ -16,20 +16,21 @@ class Def(Regexable):
         children_repr = " ".join(repr(child) for child in self.children)
         return f"{self.__class__.__name__.lower()[:-3]} {self.name} = {children_repr}"
 
-    def to_regex(self):
+    def to_regex(self, format):
         # to turn this into a regex, just concat the regexes of the children
-        return "".join(expr.to_regex() for expr in self.children)
+        return "".join(expr.to_regex(format) for expr in self.children)
 
 
 class GroupDef(Def):
-    def to_regex(self):
-        return f"(?<{self.name}>{super().to_regex()})"
+    def to_regex(self, format):
+        prefix = "P" if format == "python" else ""
+        return f"(?{prefix}<{self.name}>{super().to_regex(format)})"
 
 
 class NameDef(Def):
     # name defs, aka plain defs, should be non-capturing groups
-    def to_regex(self):
-        return f"(?:{super().to_regex()})"
+    def to_regex(self, format):
+        return f"(?:{super().to_regex(format)})"
 
 
 class OrExpr(Expr):
@@ -40,8 +41,8 @@ class OrExpr(Expr):
     def __repr__(self):
         return f"{repr(self.left)} | {repr(self.right)}"
 
-    def to_regex(self):
-        return f"(?:{self.left.to_regex()}|{self.right.to_regex()})"
+    def to_regex(self, format):
+        return f"(?:{self.left.to_regex(format)}|{self.right.to_regex(format)})"
 
 
 class OptionalGroupExpr(Expr):
@@ -52,8 +53,8 @@ class OptionalGroupExpr(Expr):
         children_repr = " ".join(repr(child) for child in self.children)
         return f"[{children_repr}]"
 
-    def to_regex(self):
-        inner_regex = "".join(expr.to_regex() for expr in self.children)
+    def to_regex(self, format):
+        inner_regex = "".join(expr.to_regex(format) for expr in self.children)
         return f"(?:{inner_regex})?"
 
 
@@ -66,9 +67,9 @@ class RuleExpr(Expr):
             return self.rule.name
         return self.rule
 
-    def to_regex(self):
+    def to_regex(self, format):
         if isinstance(self.rule, Def):
-            return self.rule.to_regex()
+            return self.rule.to_regex(format)
         else:
             raise Exception("rule should be resolved to a def")
 
@@ -82,8 +83,8 @@ class RuleRangeExpr(RuleExpr):
     def __repr__(self):
         return f"{self.rule}{{{self.min},{self.max}}}"
 
-    def to_regex(self):
-        return super().to_regex() + f"{{{self.min},{self.max}}}"
+    def to_regex(self, format):
+        return super().to_regex(format) + f"{{{self.min},{self.max}}}"
 
 
 class RuleCountExpr(RuleExpr):
@@ -94,8 +95,8 @@ class RuleCountExpr(RuleExpr):
     def __repr__(self):
         return f"{self.rule}{{{self.count}}}"
 
-    def to_regex(self):
-        return super().to_regex() + f"{{{self.count}}}"
+    def to_regex(self, format):
+        return super().to_regex(format) + f"{{{self.count}}}"
 
 
 class LiteralExpr(Expr):
@@ -105,5 +106,5 @@ class LiteralExpr(Expr):
     def __repr__(self):
         return f'"{self.literal}"'
 
-    def to_regex(self):
+    def to_regex(self, _format):
         return self.literal
