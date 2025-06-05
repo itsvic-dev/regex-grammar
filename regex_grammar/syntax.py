@@ -30,7 +30,11 @@ class GroupDef(Def):
 class NameDef(Def):
     # name defs, aka plain defs, should be non-capturing groups
     def to_regex(self, format):
-        return f"(?:{super().to_regex(format)})"
+        inner_regex = super().to_regex(format)
+        # if we have only one child, we can skip the group
+        if len(self.children) == 1:
+            return inner_regex
+        return f"(?:{inner_regex})"
 
 
 class OrExpr(Expr):
@@ -55,6 +59,9 @@ class OptionalGroupExpr(Expr):
 
     def to_regex(self, format):
         inner_regex = "".join(expr.to_regex(format) for expr in self.children)
+        # if we have only one child, we can skip the group
+        if len(self.children) == 1:
+            return inner_regex + "?"
         return f"(?:{inner_regex})?"
 
 
