@@ -14,6 +14,10 @@ def parse_file(file: io.TextIOBase) -> list[s.Def] | None:
     tokenizer = Tokenizer(tokengen)
     parser = GeneratedParser(tokenizer)
     tree = parser.start()
+
+    if not tree:
+        raise parser.make_syntax_error("invalid syntax")
+
     logger.debug(f"got tree {tree}")
 
     # go through the tree, find all RuleExprs and resolve the rule names to Defs
@@ -24,15 +28,15 @@ def parse_file(file: io.TextIOBase) -> list[s.Def] | None:
             d = defs[expr.rule]
             logger.debug(f"resolved rule def `{expr.rule}' to `{d}'")
             expr.rule = d
+        elif isinstance(expr, s.OrExpr):
+            resolve_rule_defs_in_expr(expr.left)
+            resolve_rule_defs_in_expr(expr.right)
 
     def resolve_rule_defs_in_exprs(exprs: list[s.Expr]):
         for expr in exprs:
             # all exprs which have children
             if hasattr(expr, "children"):
                 resolve_rule_defs_in_exprs(expr.children)
-            elif isinstance(expr, s.OrExpr):
-                resolve_rule_defs_in_expr(expr.left)
-                resolve_rule_defs_in_expr(expr.right)
             else:
                 resolve_rule_defs_in_expr(expr)
 
