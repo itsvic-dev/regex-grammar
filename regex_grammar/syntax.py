@@ -1,5 +1,5 @@
 class Regexable:
-    def to_regex(self, _format):
+    def to_regex(self, _format, _prefix):
         raise NotImplementedError(f"{self.__class__.__name__}.to_regex()")
 
 
@@ -16,21 +16,37 @@ class Def(Regexable):
         children_repr = " ".join(repr(child) for child in self.children)
         return f"{self.__class__.__name__.lower()[:-3]} {self.name} = {children_repr}"
 
-    def to_regex(self, format):
+    def to_regex(self, format, prefix=""):
         # to turn this into a regex, just concat the regexes of the children
-        return "".join(expr.to_regex(format) for expr in self.children)
+        return "".join(expr.to_regex(format, prefix) for expr in self.children)
 
 
 class GroupDef(Def):
-    def to_regex(self, format):
-        prefix = "P" if format == "python" else ""
-        return f"(?{prefix}<{self.name}>{super().to_regex(format)})"
+    def to_regex(self, format, prefix=""):
+        format_prefix = "P" if format == "python" else ""
+        if format != "js":
+            # append our name + the old prefix to future groups
+            # don't do this for JS as it allows such a construction
+            new_prefix = prefix + self.name + "_"
+        else:
+            new_prefix = ""
+        if len(prefix + self.name) > 32:
+            raise Exception(
+                f"name of prefixed group {prefix + self.name} is too long (>32)"
+            )
+        return f"(?{format_prefix}<{prefix + self.name}>{super().to_regex(format, new_prefix)})"
 
 
 class NameDef(Def):
     # name defs, aka plain defs, should be non-capturing groups
-    def to_regex(self, format):
-        inner_regex = super().to_regex(format)
+    def to_regex(self, format, prefix):
+        if format != "js":
+            # append our name + the old prefix to future groups
+            # don't do this for JS as it allows such a construction
+            new_prefix = prefix + self.name + "_"
+        else:
+            new_prefix = ""
+        inner_regex = super().to_regex(format, new_prefix)
         # if we have only one child, we can skip the group
         if len(self.children) == 1:
             return inner_regex
@@ -45,8 +61,8 @@ class OrExpr(Expr):
     def __repr__(self):
         return f"{repr(self.left)} | {repr(self.right)}"
 
-    def to_regex(self, format):
-        return f"(?:{self.left.to_regex(format)}|{self.right.to_regex(format)})"
+    def to_regex(self, format, prefix):
+        return f"(?:{self.left.to_regex(format, prefix)}|{self.right.to_regex(format, prefix)})"
 
 
 class OptionalGroupExpr(Expr):
@@ -57,8 +73,8 @@ class OptionalGroupExpr(Expr):
         children_repr = " ".join(repr(child) for child in self.children)
         return f"[{children_repr}]"
 
-    def to_regex(self, format):
-        inner_regex = "".join(expr.to_regex(format) for expr in self.children)
+    def to_regex(self, format, prefix):
+        inner_regex = "".join(expr.to_regex(format, prefix) for expr in self.children)
         # if we have only one child, we can skip the group
         if len(self.children) == 1:
             return inner_regex + "?"
@@ -74,11 +90,11 @@ class RuleExpr(Expr):
             return self.rule.name
         return self.rule
 
-    def to_regex(self, format):
+    def to_regex(self, format, prefix):
         if isinstance(self.rule, Def):
-            return self.rule.to_regex(format)
+            return self.rule.to_regex(format, prefix)
         else:
-            raise Exception("rule should be resolved to a def")
+            raise Exception(f"rule {self.rule} should be resolved to a def")
 
 
 class RuleRangeExpr(RuleExpr):
@@ -90,8 +106,8 @@ class RuleRangeExpr(RuleExpr):
     def __repr__(self):
         return f"{self.rule}{{{self.min},{self.max}}}"
 
-    def to_regex(self, format):
-        return super().to_regex(format) + f"{{{self.min},{self.max}}}"
+    def to_regex(self, format, prefix):
+        return super().to_regex(format, prefix) + f"{{{self.min},{self.max}}}"
 
 
 class RuleCountExpr(RuleExpr):
@@ -102,8 +118,8 @@ class RuleCountExpr(RuleExpr):
     def __repr__(self):
         return f"{self.rule}{{{self.count}}}"
 
-    def to_regex(self, format):
-        return super().to_regex(format) + f"{{{self.count}}}"
+    def to_regex(self, format, prefix):
+        return super().to_regex(format, prefix) + f"{{{self.count}}}"
 
 
 class LiteralExpr(Expr):
@@ -113,5 +129,5 @@ class LiteralExpr(Expr):
     def __repr__(self):
         return f'"{self.literal}"'
 
-    def to_regex(self, _format):
+    def to_regex(self, _format, _prefix):
         return self.literal

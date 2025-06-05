@@ -29,8 +29,7 @@ def parse_file(file: io.TextIOBase) -> list[s.Def] | None:
             logger.debug(f"resolved rule def `{expr.rule}' to `{d}'")
             expr.rule = d
         elif isinstance(expr, s.OrExpr):
-            resolve_rule_defs_in_expr(expr.left)
-            resolve_rule_defs_in_expr(expr.right)
+            resolve_rule_defs_in_exprs([expr.left, expr.right])
 
     def resolve_rule_defs_in_exprs(exprs: list[s.Expr]):
         for expr in exprs:
