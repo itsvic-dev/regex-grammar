@@ -15,6 +15,7 @@ def_rule: 'def' NAME '=' exprs { s.NameDef(name.string, exprs) }
 exprs: expr+
 
 expr: e=(or_expr
+        | group_expr
         | optional_group_expr
         | rule_with_range_expr
         | rule_with_count_expr
@@ -24,6 +25,7 @@ expr: e=(or_expr
 
 or_expr: e1=expr '|' e2=expr { s.OrExpr(e1, e2) }
 optional_group_expr: '[' exprs ']' { s.OptionalGroupExpr(exprs) }
+group_expr: '(' exprs ')' { s.GroupExpr(exprs) }
 rule_with_count_expr: NAME '{' c1=NUMBER '}' { s.RuleCountExpr(name.string, c1.string) }
 rule_with_range_expr: NAME '{' c1=NUMBER ',' c2=NUMBER '}' { s.RuleRangeExpr(name.string, c1.string, c2.string) }
 rule_mention_expr: NAME { s.RuleExpr(name.string) }
