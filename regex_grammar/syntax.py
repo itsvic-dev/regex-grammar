@@ -25,12 +25,20 @@ class GroupDef(Def):
     def to_regex(self, format, prefix=""):
         format_prefix = "P" if format == "python" else ""
         # append our name + the old prefix to future groups
-        new_prefix = prefix + self.name + "_"
-        if len(prefix + self.name) > 32:
-            raise Exception(
-                f"name of prefixed group {prefix + self.name} is too long (>32)"
-            )
-        return f"(?{format_prefix}<{prefix + self.name}>{super().to_regex(format, new_prefix)})"
+        if not format.endswith("-ng"):
+            new_prefix = prefix + self.name + "_"
+            if len(prefix + self.name) > 32:
+                raise Exception(
+                    f"name of prefixed group {prefix + self.name} is too long (>32)"
+                )
+        else:
+            new_prefix = ""
+
+        inner_regex = super().to_regex(format, new_prefix)
+        if format.endswith("-ng"):
+            return f"({inner_regex})"
+        else:
+            return f"(?{format_prefix}<{prefix + self.name}>{inner_regex})"
 
 
 class NameDef(Def):

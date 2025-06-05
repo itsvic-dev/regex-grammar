@@ -15,7 +15,7 @@ def get_args():
     parser.add_argument(
         "-f",
         "--format",
-        choices=["python", "js"],
+        choices=["python", "js", "js-ng"],
         default="python",
         help="which style regex to generate",
     )
